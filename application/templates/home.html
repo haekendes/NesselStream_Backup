@@ -1,0 +1,235 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  {% if title %}
+      <title>{{ title }}</title>
+  {% endif %}
+  {% block styles %}
+    {{ bootstrap.load_css() }}
+  <style>
+      body {
+        font-size: 1.5rem;
+        color: #eeee;
+      }
+      #image-box {
+        width: fit-content;
+        margin-top: 9px;
+      }
+      img {
+        width: 100%;
+        max-height: 70vh;
+        object-fit: contain;
+        border-radius: 16px;
+      }
+      #giessenInput {
+        width: 120px;
+      }
+      input {
+        width: 66%;
+      }
+      button {
+        height: 120px;
+      }
+      h1 {text-align: center;}
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #1d1e22;
+      }
+
+      .box {
+        left: 50%;
+        transform: translate(0%, 0%);
+        padding: 20px 50px;
+        display: inline-block;
+        text-decoration: none;
+        text-transform: uppercase;
+        overflow: hidden;
+        cursor: pointer;
+        font: 16px/24px Arial, sans-serif;
+        background-color: #4973ff;
+        transition: 
+          box-shadow 0.4s ease, 
+          background-color 0.4s ease, 
+          color 0.4s ease;
+        box-shadow: 
+          0 0 2px 0 rgba(73, 115, 255, .1), 
+          0 0 4px 0 rgba(73, 115, 255, .2), 
+          0 0 6px 0 rgba(73, 115, 255, .3), 
+          0 0 8px 0 rgba(73, 115, 255, .4),
+          0 0 12px 0 rgba(73, 115, 255, .5), 
+          0 0 18px 0 rgba(73, 115, 255, .6);
+      }
+
+      .box:hover{
+        background-color: #ea3c;
+        box-shadow: 
+          0 0 2px 0 rgba(238, 170, 51, 0.1), 
+          0 0 4px 0 rgba(238, 170, 51, 0.2), 
+          0 0 6px 0 rgba(238, 170, 51, 0.3), 
+          0 0 8px 0 rgba(238, 170, 51, 0.4),
+          0 0 12px 0 rgba(238, 170, 51, 0.5), 
+          0 0 18px 0 rgba(238, 170, 51, 0.6),
+          0 0 4px 0 rgba(238, 170, 51, 0.7);
+      }
+
+      .box span {
+        color: #fff;
+        letter-spacing: 8px;
+      }
+
+      .box i {
+        position: absolute;
+        z-index: -1;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 100%;
+        height: 200px;
+        background-color: inherit;
+        box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
+        transition: 
+          transform 0.4s linear, 
+          top 1s linear;
+        overflow: hidden;
+      }
+
+      .box i:before,
+      .box i:after {
+        content: "";
+        position: absolute;
+        width: 200%;
+        height: 200%;
+        top: 0;
+        left: 50%;
+        transform: translate(-50%, -75%);
+      }
+      .box i:before {
+        border-radius: 46%;
+        background-color: rgba(20, 20, 20, 0.2);
+        animation: animate 5s linear infinite;
+      }
+      .box i:after {
+        border-radius: 40%;
+        background-color: rgba(20, 20, 20, 0.5);
+        animation: animate 10s linear infinite;
+      }
+
+      @keyframes animate {
+        0% {
+          transform: 
+            translate(-50%, -75%) 
+            rotate(0deg);
+        }
+        100% {
+          transform: 
+            translate(-50%, -75%) 
+            rotate(360deg);
+        }
+      }
+
+    </style>
+  {% endblock %}
+  {% block scripts %}
+  {% endblock %}
+</head>
+<body>
+  <div class="d-flex flex-column align-items-center w-100">
+    <div id="image-box">
+      <img id="bg" src="{{ url_for('picture') }}">
+    </div>
+  </div>
+  </div><div class="d-flex flex-column align-items-center align-middle m-2 py-5">
+    <input id="giessenInput" type="password" class="form-control text-center"></input>
+  </div>
+  <div class="container">
+    <div class="d-flex flex-column align-items-center align-middle">
+      <span id="tempSpan"></span>
+    </div>
+    <div class="d-flex flex-column-reverse align-items-center align-middle m-2">
+      <input type="range" class="form-range" value="3" min="1" max="5" id="timeRange" oninput="this.nextElementSibling.value = this.value">
+      <output>3</output>
+    </div>
+    <div class="d-flex flex-column align-items-center align-middle m-5">
+      <div tabindex="0" id="giessenButton" class="box">
+        <span>Giessen</span>
+        <i></i>
+      </div>
+    <div class="d-flex flex-column align-items-center align-middle m-5">
+      <ul id="responseList">
+      </ul>
+    </div>
+  </div>
+<script>
+  const giessenButton = document.getElementById('giessenButton');
+  const timeRange = document.getElementById('timeRange');
+  const responseList = document.getElementById('responseList');
+  const giessenInput = document.getElementById('giessenInput');
+  giessenInput.focus();
+
+  var textNode;
+
+  giessenButton.addEventListener('click', (event) => {
+    const li = document.createElement("li");
+    textNode = document.createTextNode("Sende " + timeRange.value + " Sekunden giessen...");
+    li.appendChild(textNode);
+    responseList.prepend(li);
+
+    giessenButton.disabled = true;
+
+    fetchData();
+  });
+
+  async function fetchData() {
+    try {
+      const response = await fetch('/giessen?' + new URLSearchParams({
+          timeRange: timeRange.value,
+          safetyPin: giessenInput.value,
+      }), {
+        method: 'POST',
+      })
+      if (response.status !== 200) {
+        console.log('Looks like there was a problem. Status Code: ' +
+          response.status);
+        return;
+      }
+      response.json().then(function (data) {
+        textNode.nodeValue = data.time + ": " + data.result;
+        giessenButton.disabled = false;
+      });
+    } catch (err) {
+      console.log('Fetch Error :-S', err);
+    }
+  }
+
+  const tempSpan = document.getElementById('tempSpan');
+
+  async function fetchTemp() {
+      try {
+        const response = await fetch('/temp', {
+          method: 'GET',
+        });
+        if (response.status !== 200) {
+          console.log('Looks like there was a problem. Status Code: ' +
+            response.status);
+          return;
+        }
+        response.json().then(function (data) {
+          tempSpan.textContent = data.temp;
+        });
+      } catch (err) {
+        console.log('Fetch Error :-S', err);
+      }
+    }
+    fetchTemp();
+    setTimeout(fetchTemp, 3000);
+
+</script>
+</body>
+</html>
